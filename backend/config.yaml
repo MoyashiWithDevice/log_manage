@@ -1,0 +1,70 @@
+# SIEM Log Management System Configuration
+
+# ログファイル設定
+logs:
+  # ログファイルのディレクトリ（複数指定可能）
+  directories:
+    - "../logs"
+    # 追加のディレクトリ例:
+    # - "/var/log"
+    # - "C:/Windows/Logs"
+  
+  # 再帰的にサブディレクトリをスキャン
+  recursive: true
+  
+  # 含めるファイルパターン（glob形式）
+  include_patterns:
+    - "*.log"
+    - "*.txt"
+  
+  # 除外するファイルパターン
+  exclude_patterns:
+    - "*.gz"
+    - "*.zip"
+    - "*backup*"
+    - "*.bak"
+  
+  # 処理する最大ファイルサイズ（MB）
+  max_file_size_mb: 100
+  
+  # ホスト名の検出方法
+  # "filename" - ファイル名をホスト名として使用（例: host1.log -> host1）
+  # "directory" - 親ディレクトリ名をホスト名として使用
+  # "auto" - 構造から自動検出
+  host_detection: "directory"
+
+# APIサーバー設定
+server:
+  host: "0.0.0.0"
+  port: 8000
+  reload: true
+  
+  # CORS設定
+  cors:
+    enabled: true
+    origins:
+      - "http://localhost:5173"
+      - "http://localhost:3000"
+
+# AI分析設定
+ai:
+  # Gemini API設定
+  gemini:
+    model: "gemini-2.0-flash-exp"
+    max_tokens: 2048
+    temperature: 0.7
+  
+  # 分析するログの最大件数
+  max_logs_to_analyze: 50
+
+# 翻訳設定
+translation:
+  # DeepL API設定
+  deepl:
+    target_lang: "JA"
+    formality: "default"
+
+# ロギング設定
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
