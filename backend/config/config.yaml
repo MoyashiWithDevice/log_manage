@@ -21,9 +21,9 @@ logs:
   recursive: true
   
   # 含めるファイルパターン（glob形式）
+  # syslog等の拡張子なしファイルもマッチさせるため "*" を含める
   include_patterns:
-    - "*.log"
-    - "*.txt"
+    - "*"
   
   # 除外するファイルパターン
   exclude_patterns:

@@ -119,5 +119,23 @@ if __name__ == "__main__":
     port = settings.get('backend', {}).get('port', 8000)
     reload_enabled = config.get('server.reload', True)
     
+    # Display log directory configuration
+    log_dirs = config.get_log_directories()
+    base_dir = config.get_log_base_dir()
+    recursive = config.is_recursive()
+    host_detection = config.get_host_detection_strategy()
+    include_patterns = config.get_include_patterns()
+    exclude_patterns = config.get_exclude_patterns()
+    
+    logger.info("=" * 60)
+    logger.info("Log Directory Configuration:")
+    logger.info(f"  Base Directory: {base_dir if base_dir else '(not set)'}")
+    logger.info(f"  Log Directories: {log_dirs}")
+    logger.info(f"  Recursive Scan: {recursive}")
+    logger.info(f"  Host Detection: {host_detection}")
+    logger.info(f"  Include Patterns: {include_patterns}")
+    logger.info(f"  Exclude Patterns: {exclude_patterns}")
+    logger.info("=" * 60)
+    
     logger.info(f"Starting server on {host}:{port}")
     uvicorn.run("main:app", host=host, port=port, reload=reload_enabled)

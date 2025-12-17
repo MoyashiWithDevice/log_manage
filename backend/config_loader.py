@@ -26,7 +26,7 @@ class Config:
                 'base_dir': '',  # 空の場合はbase_dirを使用しない
                 'directories': ['./logs'],
                 'recursive': False,
-                'include_patterns': ['*.log', '*.txt'],
+                'include_patterns': ['*'],  # すべてのファイルをマッチ（syslog等の拡張子なしファイルも含む）
                 'exclude_patterns': ['*.gz', '*.zip', '*backup*', '*.bak'],
                 'max_file_size_mb': 100,
                 'host_detection': 'filename'
@@ -131,7 +131,7 @@ class Config:
     
     def get_include_patterns(self) -> List[str]:
         """Get file include patterns"""
-        return self.get('logs.include_patterns', ['*.log', '*.txt'])
+        return self.get('logs.include_patterns', ['*'])
     
     def get_exclude_patterns(self) -> List[str]:
         """Get file exclude patterns"""
@@ -232,16 +232,30 @@ def load_config_with_env_override(config_path: str = None) -> Config:
     if base_dir:
         base_path = Path(base_dir)
         original_dirs = config.config['logs']['directories']
-        resolved_dirs = []
         
-        for log_dir in original_dirs:
-            log_path = Path(log_dir)
-            # If the log_dir is an absolute path, use it as-is
-            # Otherwise, make it relative to the base directory
-            if log_path.is_absolute():
-                resolved_dirs.append(str(log_path))
-            else:
-                resolved_dirs.append(str(base_path / log_path))
+        # If directories is the default value or empty, use base_dir itself
+        # This handles cases like LOG_BASE_DIR=/var/log/remote/ where host directories are inside
+        default_dirs = ['./logs', '.', 'logs']
+        if not original_dirs or any(d in default_dirs for d in original_dirs):
+            resolved_dirs = [str(base_path)]
+            # When using base_dir directly, enable recursive scanning and directory-based host detection
+            # unless explicitly overridden
+            if 'LOG_RECURSIVE' not in os.environ:
+                config.config['logs']['recursive'] = True
+                logger.info("Enabled recursive scanning for base_dir mode")
+            if 'LOG_HOST_DETECTION' not in os.environ:
+                config.config['logs']['host_detection'] = 'directory'
+                logger.info("Set host_detection to 'directory' for base_dir mode")
+        else:
+            resolved_dirs = []
+            for log_dir in original_dirs:
+                log_path = Path(log_dir)
+                # If the log_dir is an absolute path, use it as-is
+                # Otherwise, make it relative to the base directory
+                if log_path.is_absolute():
+                    resolved_dirs.append(str(log_path))
+                else:
+                    resolved_dirs.append(str(base_path / log_path))
         
         config.config['logs']['directories'] = resolved_dirs
         config.config['logs']['base_dir'] = base_dir
