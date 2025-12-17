@@ -23,9 +23,9 @@ echo "==================================="
 
 # バックエンドを起動（バックグラウンド）
 echo ""
-echo "[Backend] uvicorn サーバーを起動中... (port 8000)"
+echo "[Backend] uvicorn サーバーを起動中... (config.yamlからポート取得)"
 cd "$SCRIPT_DIR/backend"
-uvicorn main:app --reload --port 8000 &
+python main.py &
 BACKEND_PID=$!
 
 # フロントエンドを起動（バックグラウンド）

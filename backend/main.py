@@ -3,12 +3,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
 import os
+import json
+from pathlib import Path
 from dotenv import load_dotenv
 from log_reader import get_hosts, get_logs, get_log_stats
 from analyzer import analyze_logs
 from translator import translate_to_japanese
 from config_loader import get_config, reload_config
 import logging
+import uvicorn
 
 load_dotenv()
 
@@ -96,3 +99,25 @@ def reload_configuration():
     except Exception as e:
         logger.error(f"Error reloading configuration: {e}")
         raise HTTPException(status_code=500, detail=f"Error reloading configuration: {str(e)}")
+
+
+def load_settings():
+    """Load settings from root settings.json"""
+    settings_path = Path(__file__).parent.parent / 'settings.json'
+    try:
+        with open(settings_path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        logger.warning(f"settings.json not found at {settings_path}, using defaults")
+        return {"backend": {"host": "0.0.0.0", "port": 8000}}
+
+
+if __name__ == "__main__":
+    # Get server configuration from settings.json
+    settings = load_settings()
+    host = settings.get('backend', {}).get('host', '0.0.0.0')
+    port = settings.get('backend', {}).get('port', 8000)
+    reload_enabled = config.get('server.reload', True)
+    
+    logger.info(f"Starting server on {host}:{port}")
+    uvicorn.run("main:app", host=host, port=port, reload=reload_enabled)

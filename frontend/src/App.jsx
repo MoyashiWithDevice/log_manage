@@ -3,6 +3,9 @@ import axios from 'axios';
 import Dashboard from './components/Dashboard';
 import LogViewer from './components/LogViewer';
 
+/* global __BACKEND_PORT__ __BACKEND_HOST__ */
+const API_URL = `http://${__BACKEND_HOST__}:${__BACKEND_PORT__}`;
+
 function App() {
   const [hosts, setHosts] = useState([]);
   const [selectedHost, setSelectedHost] = useState("");
@@ -14,7 +17,7 @@ function App() {
   const fetchHosts = async () => {
     console.log('Fetching hosts from API...');
     try {
-      const response = await axios.get('http://localhost:8000/hosts');
+      const response = await axios.get(`${API_URL}/hosts`);
       console.log('API Response:', response.data);
       setHosts(response.data);
       if (response.data.length > 0) {

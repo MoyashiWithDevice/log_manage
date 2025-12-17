@@ -4,6 +4,9 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import jsPDF from 'jspdf';
 
+/* global __BACKEND_PORT__ __BACKEND_HOST__ */
+const API_URL = `http://${__BACKEND_HOST__}:${__BACKEND_PORT__}`;
+
 const LogViewer = ({ selectedHost }) => {
     const [logs, setLogs] = useState([]);
     const [analysis, setAnalysis] = useState("");
@@ -45,7 +48,7 @@ const LogViewer = ({ selectedHost }) => {
 
     const fetchLogs = async () => {
         try {
-            const response = await axios.get(`http://localhost:8000/logs/${selectedHost}?limit=1000`);
+            const response = await axios.get(`${API_URL}/logs/${selectedHost}?limit=1000`);
             setLogs(response.data);
         } catch (error) {
             console.error("Error fetching logs:", error);
@@ -62,7 +65,7 @@ const LogViewer = ({ selectedHost }) => {
 
         try {
             const logLines = filteredLogs.slice(0, 50).map(l => l.raw);
-            const response = await axios.post('http://localhost:8000/analyze', { logs: logLines });
+            const response = await axios.post(`${API_URL}/analyze`, { logs: logLines });
             setAnalysis(response.data.analysis);
         } catch (error) {
             console.error("Error analyzing logs:", error);
@@ -78,7 +81,7 @@ const LogViewer = ({ selectedHost }) => {
 
         setLoadingTranslation(true);
         try {
-            const response = await axios.post('http://localhost:8000/translate', { text: analysis });
+            const response = await axios.post(`${API_URL}/translate`, { text: analysis });
             setTranslatedAnalysis(response.data.translated_text);
         } catch (error) {
             console.error("Error translating:", error);

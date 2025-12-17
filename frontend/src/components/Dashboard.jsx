@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, AreaChart, Area } from 'recharts';
 
+/* global __BACKEND_PORT__ __BACKEND_HOST__ */
+const API_URL = `http://${__BACKEND_HOST__}:${__BACKEND_PORT__}`;
+
 const Dashboard = ({ selectedHost }) => {
     const [stats, setStats] = useState(null);
     const [timeRange, setTimeRange] = useState("all");
@@ -14,7 +17,7 @@ const Dashboard = ({ selectedHost }) => {
 
     const fetchStats = async () => {
         try {
-            const response = await axios.get(`http://localhost:8000/stats/${selectedHost}?time_range=${timeRange}`);
+            const response = await axios.get(`${API_URL}/stats/${selectedHost}?time_range=${timeRange}`);
             setStats(response.data);
         } catch (error) {
             console.error("Error fetching stats:", error);
