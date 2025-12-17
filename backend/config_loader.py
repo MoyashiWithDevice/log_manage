@@ -173,7 +173,7 @@ def load_config(config_path: str = None) -> Config:
     """
     if config_path is None:
         # Look for config.yaml in the same directory as this script
-        config_path = Path(__file__).parent / 'config.yaml'
+        config_path = Path(__file__).parent /'config'/'config.yaml'
     
     config_path = Path(config_path)
     
