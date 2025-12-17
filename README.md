@@ -39,7 +39,8 @@ AI分析機能、日本語翻訳、PDF出力機能を備えたセキュリティ
 ### 2. リポジトリのクローン
 
 ```bash
-cd c:/Users/pijon/Desktop/コーディング技法/log_manage
+git clone https://github.com/MoyashiWithDevice/log_manage.git
+cd log_manage
 ```
 
 ### 3. バックエンドのセットアップ
