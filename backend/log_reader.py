@@ -68,6 +68,7 @@ def get_log_stats(host, time_range="1h"):
         # Convert timestamp strings to datetime for filtering
         from datetime import datetime, timedelta
         import calendar
+        import re
         
         def parse_timestamp(ts_str):
             """Parse various timestamp formats"""
@@ -75,9 +76,33 @@ def get_log_stats(host, time_range="1h"):
                 return None
             
             try:
-                # Try ISO format first (YYYY-MM-DD HH:MM:SS)
+                # Try ISO 8601 format with T (e.g., 2025-12-17T23:00:19.900707+09:00)
+                if 'T' in ts_str:
+                    # Parse ISO 8601 with timezone
+                    match = re.match(r'(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2}:\d{2})(?:\.\d+)?([+-]\d{2}:\d{2})?', ts_str)
+                    if match:
+                        date_part = match.group(1)
+                        time_part = match.group(2)
+                        tz_part = match.group(3)
+                        dt_str = f"{date_part} {time_part}"
+                        result = datetime.strptime(dt_str, '%Y-%m-%d %H:%M:%S')
+                        
+                        # Adjust for timezone if present - convert to local time (JST)
+                        if tz_part:
+                            tz_sign = 1 if tz_part[0] == '+' else -1
+                            tz_hours = int(tz_part[1:3])
+                            tz_minutes = int(tz_part[4:6])
+                            tz_offset = timedelta(hours=tz_hours, minutes=tz_minutes) * tz_sign
+                            # Convert to UTC then to local time (JST is +09:00)
+                            result_utc = result - tz_offset
+                            jst_offset = timedelta(hours=9)
+                            result = result_utc + jst_offset
+                        
+                        return result
+                
+                # Try simple ISO format (YYYY-MM-DD HH:MM:SS)
                 if '-' in ts_str and ':' in ts_str:
-                    return pd.to_datetime(ts_str, errors='coerce')
+                    return datetime.strptime(ts_str, '%Y-%m-%d %H:%M:%S')
                 
                 parts = ts_str.split()
                 
