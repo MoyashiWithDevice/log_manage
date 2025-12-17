@@ -13,10 +13,13 @@ export default defineConfig({
   server: {
     host: settings.frontend.host,
     port: settings.frontend.port,
-  },
-  define: {
-    // Inject backend API configuration at build time
-    '__BACKEND_PORT__': JSON.stringify(settings.backend.port),
-    '__BACKEND_HOST__': JSON.stringify(settings.backend.host),
+    proxy: {
+      // Proxy API requests to backend
+      '/api': {
+        target: `http://${settings.backend.host}:${settings.backend.port}`,
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, ''),
+      },
+    },
   },
 })

@@ -4,8 +4,8 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import jsPDF from 'jspdf';
 
-/* global __BACKEND_PORT__ __BACKEND_HOST__ */
-const API_URL = `http://${__BACKEND_HOST__}:${__BACKEND_PORT__}`;
+// API requests are proxied through Vite dev server
+const API_URL = '/api';
 
 const LogViewer = ({ selectedHost }) => {
     const [logs, setLogs] = useState([]);

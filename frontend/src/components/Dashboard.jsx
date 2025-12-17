@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, AreaChart, Area } from 'recharts';
 
-/* global __BACKEND_PORT__ __BACKEND_HOST__ */
-const API_URL = `http://${__BACKEND_HOST__}:${__BACKEND_PORT__}`;
+// API requests are proxied through Vite dev server
+const API_URL = '/api';
 
 const Dashboard = ({ selectedHost }) => {
     const [stats, setStats] = useState(null);

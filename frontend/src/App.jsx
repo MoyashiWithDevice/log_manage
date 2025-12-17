@@ -3,8 +3,8 @@ import axios from 'axios';
 import Dashboard from './components/Dashboard';
 import LogViewer from './components/LogViewer';
 
-/* global __BACKEND_PORT__ __BACKEND_HOST__ */
-const API_URL = `http://${__BACKEND_HOST__}:${__BACKEND_PORT__}`;
+// API requests are proxied through Vite dev server
+const API_URL = '/api';
 
 function App() {
   const [hosts, setHosts] = useState([]);
