@@ -27,6 +27,10 @@ class LogParser:
         self.syslog_pattern = re.compile(
             r'^([A-Z][a-z]{2}\s+\d+\s\d{2}:\d{2}:\d{2})\s+(\S+)\s+([^:]+):\s+(.+)$'
         )
+        # Regex for ISO 8601 syslog format: 2025-12-17T16:13:08+00:00 RHEL-FRONT tailscaled[926]: message
+        self.iso8601_syslog_pattern = re.compile(
+            r'^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2})\s+(\S+)\s+(\S+?)(?:\[(\d+)\])?:\s+(.+)$'
+        )
         # Regex for ISO format (fallback)
         self.iso_pattern = re.compile(
             r'(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})\s+(INFO|WARN|ERROR|DEBUG)\s+(\S+):\s+(.+)'
@@ -183,7 +187,37 @@ class LogParser:
                     if not line:
                         continue
                     
-                    # Try Syslog format first
+                    # Try ISO 8601 syslog format first (e.g., 2025-12-17T16:13:08+00:00 RHEL-FRONT tailscaled[926]: message)
+                    match = self.iso8601_syslog_pattern.match(line)
+                    if match:
+                        timestamp, host, process, pid, message = match.groups()
+                        
+                        # Determine log level from message content
+                        level = "INFO"
+                        if "error" in message.lower() or "fail" in message.lower():
+                            level = "ERROR"
+                        elif "warn" in message.lower():
+                            level = "WARN"
+                        elif "debug" in message.lower():
+                            level = "DEBUG"
+                        
+                        service = file_path.stem
+                        
+                        logs.append({
+                            'timestamp': timestamp,
+                            'level': level,
+                            'process': process,
+                            'service': service,
+                            'message': message,
+                            'raw': line,
+                            'file': str(file_path),
+                            'line_number': line_num,
+                            'host': host,
+                            'pid': pid
+                        })
+                        continue
+                    
+                    # Try traditional Syslog format (e.g., Nov 26 12:00:01 host1 process[pid]: message)
                     match = self.syslog_pattern.match(line)
                     if match:
                         timestamp_str, host, process_raw, message = match.groups()
@@ -209,7 +243,7 @@ class LogParser:
                         })
                         continue
 
-                    # Try ISO format
+                    # Try simple ISO format (e.g., 2024-01-01 12:00:00 INFO process: message)
                     match = self.iso_pattern.match(line)
                     if match:
                         timestamp, level, process, message = match.groups()
