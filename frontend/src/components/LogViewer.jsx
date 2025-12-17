@@ -48,7 +48,7 @@ const LogViewer = ({ selectedHost }) => {
 
     const fetchLogs = async () => {
         try {
-            const response = await axios.get(`${API_URL}/logs/${selectedHost}?limit=1000`);
+            const response = await axios.get(`${API_URL}/logs/${selectedHost}?limit=50`);
             setLogs(response.data);
         } catch (error) {
             console.error("Error fetching logs:", error);
