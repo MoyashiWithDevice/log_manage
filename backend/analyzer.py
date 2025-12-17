@@ -1,4 +1,4 @@
-import google.generativeai as genai
+import google as genai
 import os
 
 def analyze_logs(logs):
