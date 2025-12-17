@@ -31,6 +31,10 @@ class LogParser:
         self.iso8601_syslog_pattern = re.compile(
             r'^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2})\s+(\S+)\s+(\S+?)(?:\[(\d+)\])?:\s+(.+)$'
         )
+        # Regex for key-value format: 2025-12-17T23:00:19.900707+09:00 host=LOGS app=rsyslogd pid=- msg= message
+        self.keyvalue_pattern = re.compile(
+            r'^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?[+-]\d{2}:\d{2})\s+host=(\S+)\s+app=(\S+)\s+pid=(\S+)\s+msg=\s*(.*)$'
+        )
         # Regex for ISO format (fallback)
         self.iso_pattern = re.compile(
             r'(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})\s+(INFO|WARN|ERROR|DEBUG)\s+(\S+):\s+(.+)'
@@ -191,6 +195,40 @@ class LogParser:
                     match = self.iso8601_syslog_pattern.match(line)
                     if match:
                         timestamp, host, process, pid, message = match.groups()
+                        
+                        # Determine log level from message content
+                        level = "INFO"
+                        if "error" in message.lower() or "fail" in message.lower():
+                            level = "ERROR"
+                        elif "warn" in message.lower():
+                            level = "WARN"
+                        elif "debug" in message.lower():
+                            level = "DEBUG"
+                        
+                        service = file_path.stem
+                        
+                        logs.append({
+                            'timestamp': timestamp,
+                            'level': level,
+                            'process': process,
+                            'service': service,
+                            'message': message,
+                            'raw': line,
+                            'file': str(file_path),
+                            'line_number': line_num,
+                            'host': host,
+                            'pid': pid
+                        })
+                        continue
+                    
+                    # Try key-value format (e.g., 2025-12-17T23:00:19.900707+09:00 host=LOGS app=rsyslogd pid=- msg= message)
+                    match = self.keyvalue_pattern.match(line)
+                    if match:
+                        timestamp, host, process, pid, message = match.groups()
+                        
+                        # Handle "-" as empty pid
+                        if pid == '-':
+                            pid = None
                         
                         # Determine log level from message content
                         level = "INFO"
