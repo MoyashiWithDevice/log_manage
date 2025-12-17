@@ -86,16 +86,8 @@ class LogParser:
         max_size_bytes = max_size_mb * 1024 * 1024
         host_detection = self.config.get_host_detection_strategy()
         
-        logger.info(f"find_log_files - directories: {directories}")
-        logger.info(f"find_log_files - recursive: {recursive}")
-        logger.info(f"find_log_files - include_patterns: {include_patterns}")
-        logger.info(f"find_log_files - exclude_patterns: {exclude_patterns}")
-        logger.info(f"find_log_files - host_detection: {host_detection}")
-        
         for directory in directories:
             dir_path = Path(directory)
-            
-            logger.info(f"Checking directory: {directory} -> {dir_path.resolve()}")
             
             if not dir_path.exists():
                 logger.warning(f"Directory does not exist: {directory}")
@@ -135,7 +127,6 @@ class LogParser:
                     log_files[host] = []
                 log_files[host].append(file_path)
         
-        logger.info(f"Found {sum(len(files) for files in log_files.values())} log files across {len(log_files)} hosts")
         return log_files
     
     def _get_host_name(self, file_path: Path, base_dir: Path) -> str:
