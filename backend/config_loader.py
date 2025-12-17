@@ -23,6 +23,7 @@ class Config:
         """Apply default values for missing configuration"""
         defaults = {
             'logs': {
+                'base_dir': '',  # 空の場合はbase_dirを使用しない
                 'directories': ['./logs'],
                 'recursive': False,
                 'include_patterns': ['*.log', '*.txt'],
@@ -113,6 +114,10 @@ class Config:
         
         return value
     
+    def get_log_base_dir(self) -> str:
+        """Get log base directory"""
+        return self.get('logs.base_dir', '')
+    
     def get_log_directories(self) -> List[str]:
         """Get list of log directories"""
         dirs = self.get('logs.directories', ['./logs'])
@@ -198,7 +203,8 @@ def load_config_with_env_override(config_path: str = None) -> Config:
     Load configuration and override with environment variables
     
     Environment variables:
-    - LOG_DIRECTORIES: Comma-separated list of log directories
+    - LOG_BASE_DIR: Base directory for log files and log directories (overrides config.yaml logs.base_dir)
+    - LOG_DIRECTORIES: Comma-separated list of log directories (relative to base_dir if set)
     - LOG_RECURSIVE: true/false for recursive scanning
     - SERVER_PORT: Server port number
     - GEMINI_MODEL: Gemini model name
@@ -211,10 +217,36 @@ def load_config_with_env_override(config_path: str = None) -> Config:
     """
     config = load_config(config_path)
     
+    # Get base directory: environment variable takes precedence over config.yaml
+    base_dir = os.environ.get('LOG_BASE_DIR', '').strip()
+    if not base_dir:
+        # Fall back to config.yaml logs.base_dir
+        base_dir = config.get('logs.base_dir', '').strip() if config.get('logs.base_dir') else ''
+    
     # Override with environment variables
     if 'LOG_DIRECTORIES' in os.environ:
         dirs = os.environ['LOG_DIRECTORIES'].split(',')
         config.config['logs']['directories'] = [d.strip() for d in dirs]
+    
+    # Apply base directory to log directories
+    if base_dir:
+        base_path = Path(base_dir)
+        original_dirs = config.config['logs']['directories']
+        resolved_dirs = []
+        
+        for log_dir in original_dirs:
+            log_path = Path(log_dir)
+            # If the log_dir is an absolute path, use it as-is
+            # Otherwise, make it relative to the base directory
+            if log_path.is_absolute():
+                resolved_dirs.append(str(log_path))
+            else:
+                resolved_dirs.append(str(base_path / log_path))
+        
+        config.config['logs']['directories'] = resolved_dirs
+        config.config['logs']['base_dir'] = base_dir
+        logger.info(f"Using base_dir: {base_dir}")
+        logger.info(f"Resolved log directories: {resolved_dirs}")
     
     if 'LOG_RECURSIVE' in os.environ:
         config.config['logs']['recursive'] = os.environ['LOG_RECURSIVE'].lower() == 'true'

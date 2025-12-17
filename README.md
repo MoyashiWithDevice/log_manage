@@ -63,12 +63,33 @@ pip install -r requirements.txt
 
 ### 4. 環境変数の設定
 
-`backend/.env` ファイルを作成し、以下の内容を設定：
+プロジェクトルートに `.env` ファイルを作成し、以下の内容を設定：
 
 ```env
 GEMINI_API_KEY=your_gemini_api_key_here
 DEEPL_API_KEY=your_deepl_api_key_here
+
+# ログファイル・ログディレクトリを格納する親ディレクトリ
+# 相対パスまたは絶対パスで指定可能
+LOG_BASE_DIR=../logs
 ```
+
+**環境変数の説明:**
+
+| 環境変数 | 説明 | 例 |
+|---------|------|-----|
+| `GEMINI_API_KEY` | Gemini APIのキー | `AIzaSy...` |
+| `DEEPL_API_KEY` | DeepL APIのキー | `xxxxx:fx` |
+| `LOG_BASE_DIR` | ログファイルの親ディレクトリ | `../logs`, `/var/log`, `C:/logs` |
+| `LOG_DIRECTORIES` | ログディレクトリ（カンマ区切り、`LOG_BASE_DIR`からの相対パス可） | `host1,host2,host3` |
+| `LOG_RECURSIVE` | サブディレクトリを再帰的にスキャン | `true` / `false` |
+| `SERVER_PORT` | APIサーバーのポート番号 | `8000` |
+| `GEMINI_MODEL` | 使用するGeminiモデル | `gemini-2.0-flash-exp` |
+
+**`LOG_BASE_DIR`の動作:**
+- 設定された場合、`config.yaml`の`logs.directories`や`LOG_DIRECTORIES`環境変数で指定されたパスが相対パスであれば、`LOG_BASE_DIR`からの相対パスとして解決されます
+- 絶対パスで指定されたディレクトリはそのまま使用されます
+- 例: `LOG_BASE_DIR=/var/log`で`directories: ["./syslog"]`の場合、`/var/log/syslog`が使用されます
 
 **APIキーの取得方法:**
 - **Gemini API**: [Google AI Studio](https://makersuite.google.com/app/apikey) でAPIキーを取得
@@ -76,14 +97,22 @@ DEEPL_API_KEY=your_deepl_api_key_here
 
 ### 5. 設定ファイルのカスタマイズ
 
-`backend/config.yaml` を編集して、ログディレクトリやその他の設定をカスタマイズできます：
+`backend/config/config.yaml` を編集して、ログディレクトリやその他の設定をカスタマイズできます：
 
 ```yaml
 logs:
+  # ログファイル・ログディレクトリを格納する親ディレクトリ（ベースディレクトリ）
+  # 相対パスまたは絶対パスで指定可能
+  # directoriesで指定した相対パスは、このbase_dirからの相対パスとして解決されます
+  # 環境変数 LOG_BASE_DIR で上書き可能
+  base_dir: "../logs"
+  
   # ログファイルのディレクトリ（複数指定可能）
+  # base_dirが設定されている場合、相対パスはbase_dirからの相対パスとして解決
+  # 絶対パスはそのまま使用
   directories:
-    - "./logs"
-    # - "/var/log/syslog"  # 追加のディレクトリ
+    - "."
+    # - "/var/log/syslog"  # 追加のディレクトリ（絶対パス）
   
   # 再帰的にサブディレクトリをスキャン
   recursive: false
@@ -102,7 +131,8 @@ logs:
 
 **主要な設定項目:**
 
-- `logs.directories`: ログファイルのディレクトリパス（複数指定可能）
+- `logs.base_dir`: ログファイルの親ディレクトリ（環境変数 `LOG_BASE_DIR` で上書き可能）
+- `logs.directories`: ログファイルのディレクトリパス（複数指定可能、`base_dir`からの相対パス可）
 - `logs.recursive`: サブディレクトリを再帰的にスキャンするか（`true`/`false`）
 - `logs.include_patterns`: 含めるファイルのパターン（glob形式）
 - `logs.exclude_patterns`: 除外するファイルのパターン（glob形式）
@@ -112,6 +142,12 @@ logs:
 - `server.cors.origins`: CORS許可オリジン
 - `ai.gemini.model`: 使用するGeminiモデル
 - `ai.max_logs_to_analyze`: AI分析する最大ログ件数
+
+**`logs.base_dir`の動作:**
+- `base_dir`が設定されている場合、`directories`で指定された相対パスは`base_dir`からの相対パスとして解決されます
+- 絶対パスで指定されたディレクトリはそのまま使用されます
+- 環境変数`LOG_BASE_DIR`が設定されている場合、`config.yaml`の`base_dir`よりも優先されます
+- 例: `base_dir: "/var/log"`で`directories: [".", "syslog"]`の場合、`/var/log`と`/var/log/syslog`が使用されます
 
 ### 6. フロントエンドのセットアップ
 
