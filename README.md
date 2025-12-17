@@ -39,29 +39,11 @@ AI分析機能、日本語翻訳、PDF出力機能を備えたセキュリティ
 ### 2. リポジトリのクローン
 
 ```bash
-cd c:/Users/pijon/Desktop/コーディング技法/log_manage
+git clone https://github.com/MoyashiWithDevice/log_manage.git
+cd log_manage
 ```
 
-### 3. バックエンドのセットアップ
-
-```bash
-# バックエンドディレクトリに移動
-cd backend
-
-# 仮想環境の作成（推奨）
-python -m venv venv
-
-# 仮想環境の有効化
-# Windows:
-venv\Scripts\activate
-# Mac/Linux:
-# source venv/bin/activate
-
-# 依存パッケージのインストール
-pip install -r requirements.txt
-```
-
-### 4. 環境変数の設定
+### 3. 環境変数の設定
 
 プロジェクトルートに `.env` ファイルを作成し、以下の内容を設定：
 
@@ -95,7 +77,7 @@ LOG_BASE_DIR=../logs
 - **Gemini API**: [Google AI Studio](https://makersuite.google.com/app/apikey) でAPIキーを取得
 - **DeepL API**: [DeepL API](https://www.deepl.com/pro-api) で無料または有料プランに登録
 
-### 5. 設定ファイルのカスタマイズ
+### 4. 設定ファイルのカスタマイズ
 
 `backend/config/config.yaml` を編集して、ログディレクトリやその他の設定をカスタマイズできます：
 
@@ -149,7 +131,7 @@ logs:
 - 環境変数`LOG_BASE_DIR`が設定されている場合、`config.yaml`の`base_dir`よりも優先されます
 - 例: `base_dir: "/var/log"`で`directories: [".", "syslog"]`の場合、`/var/log`と`/var/log/syslog`が使用されます
 
-### 6. フロントエンドのセットアップ
+### 5. フロントエンドのセットアップ
 
 ```bash
 # フロントエンドディレクトリに移動
@@ -159,7 +141,7 @@ cd ../frontend
 npm install
 ```
 
-### 7. ログデータの配置
+### 6. ログデータの配置
 
 `backend/logs/` ディレクトリにホスト別のログファイルを配置：
 
