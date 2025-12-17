@@ -289,6 +289,41 @@ const LogViewer = ({ selectedHost }) => {
             .join(' ');
     };
 
+    const formatTimestamp = (timestamp) => {
+        if (!timestamp) return '-';
+        
+        try {
+            // Handle ISO 8601 format with T (e.g., 2025-12-17T23:00:19.900707+09:00)
+            if (timestamp.includes('T')) {
+                // Parse the timestamp
+                const match = timestamp.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2}:\d{2})/);
+                if (match) {
+                    return `${match[1]} ${match[2]}`;
+                }
+            }
+            
+            // Handle syslog format with year prefix (e.g., 2025 Nov 26 14:23:30)
+            const syslogMatch = timestamp.match(/^(\d{4})\s+([A-Z][a-z]{2})\s+(\d+)\s+(\d{2}:\d{2}:\d{2})/);
+            if (syslogMatch) {
+                const monthNames = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                const monthNum = monthNames.indexOf(syslogMatch[2]);
+                const month = monthNum > 0 ? String(monthNum).padStart(2, '0') : '??';
+                const day = syslogMatch[3].padStart(2, '0');
+                return `${syslogMatch[1]}-${month}-${day} ${syslogMatch[4]}`;
+            }
+            
+            // Handle simple ISO format (e.g., 2024-01-01 12:00:00)
+            if (timestamp.match(/^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}/)) {
+                return timestamp.substring(0, 19);
+            }
+            
+            // Return as-is if format is unknown
+            return timestamp;
+        } catch (e) {
+            return timestamp;
+        }
+    };
+
     const filteredLogs = useMemo(() => {
         let result = logs.filter(log => {
             const matchLevel = filterLevel === "ALL" || log.level === filterLevel;
@@ -530,7 +565,7 @@ const LogViewer = ({ selectedHost }) => {
                         {paginatedLogs.length > 0 ? (
                             paginatedLogs.map((log, index) => (
                                 <tr key={index} className="hover:bg-slate-700/50 transition-colors">
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300 font-mono">{log.timestamp}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300 font-mono">{formatTimestamp(log.timestamp)}</td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${log.level === 'ERROR' ? 'bg-red-900/50 text-red-300 border border-red-700' : log.level === 'WARN' ? 'bg-yellow-900/50 text-yellow-300 border border-yellow-700' : 'bg-green-900/50 text-green-300 border border-green-700'}`}>
                                             {log.level}
