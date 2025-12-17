@@ -10,6 +10,10 @@ const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf-8'))
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  server: {
+    host: settings.frontend.host,
+    port: settings.frontend.port,
+  },
   define: {
     // Inject backend API configuration at build time
     '__BACKEND_PORT__': JSON.stringify(settings.backend.port),
