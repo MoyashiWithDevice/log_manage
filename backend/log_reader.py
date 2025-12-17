@@ -54,13 +54,16 @@ def get_log_stats(host, time_range="1h"):
     """Get statistics for a specific host using configuration-based parser"""
     logs = get_logs(host, limit=10000)  # Analyze last 10000 logs for stats
     if not logs:
-        return {"total": 0, "levels": {}, "time_series": []}
+        return {"total": 0, "levels": {}, "time_series": [], "filtered_total": 0, "filtered_levels": {}}
     
     df = pd.DataFrame(logs)
     level_counts = df["level"].value_counts().to_dict()
     
     # Parse timestamps and create time-series data
     time_series = []
+    filtered_total = 0
+    filtered_levels = {}
+    
     try:
         # Convert timestamp strings to datetime for filtering
         from datetime import datetime, timedelta
@@ -76,12 +79,24 @@ def get_log_stats(host, time_range="1h"):
                 if '-' in ts_str and ':' in ts_str:
                     return pd.to_datetime(ts_str, errors='coerce')
                 
+                parts = ts_str.split()
+                
+                # Check if first part is a year (e.g., "2025 Nov 26 14:23:30")
+                if len(parts) >= 4 and parts[0].isdigit() and len(parts[0]) == 4:
+                    year = int(parts[0])
+                    month_abbr = parts[1]
+                    month_num = list(calendar.month_abbr).index(month_abbr)
+                    day = int(parts[2])
+                    time_part = parts[3]
+                    hour, minute, second = map(int, time_part.split(':'))
+                    return datetime(year, month_num, day, hour, minute, second)
+                
                 # Try syslog format (Nov 26 12:00:01)
                 current_year = datetime.now().year
-                month_abbr = ts_str.split()[0]
+                month_abbr = parts[0]
                 month_num = list(calendar.month_abbr).index(month_abbr)
-                day = int(ts_str.split()[1])
-                time_part = ts_str.split()[2]
+                day = int(parts[1])
+                time_part = parts[2]
                 hour, minute, second = map(int, time_part.split(':'))
                 return datetime(current_year, month_num, day, hour, minute, second)
             except Exception as e:
@@ -97,7 +112,9 @@ def get_log_stats(host, time_range="1h"):
             return {
                 "total": len(logs),
                 "levels": level_counts,
-                "time_series": []
+                "time_series": [],
+                "filtered_total": len(logs),
+                "filtered_levels": level_counts
             }
         
         # Ensure datetime column is datetime type
@@ -105,32 +122,70 @@ def get_log_stats(host, time_range="1h"):
         
         # Determine time window and grouping based on time_range
         now = datetime.now()
-        if time_range == "1h":
-            cutoff = now - timedelta(hours=1)
-            time_format = '%H:%M'
-            delta = timedelta(minutes=1)
-        elif time_range == "1d":
-            cutoff = now - timedelta(days=1)
-            time_format = '%m/%d %H:00'
-            delta = timedelta(hours=1)
-        elif time_range == "1w":
-            cutoff = now - timedelta(weeks=1)
-            time_format = '%m/%d'
-            delta = timedelta(days=1)
+        
+        # Handle "all" time range - no filtering
+        if time_range == "all":
+            cutoff = df_valid['datetime'].min()
+            max_time = df_valid['datetime'].max()
+            time_diff = max_time - cutoff
+            
+            # Choose appropriate grouping based on data range
+            if time_diff <= timedelta(hours=1):
+                time_format = '%H:%M'
+                delta = timedelta(minutes=1)
+            elif time_diff <= timedelta(days=1):
+                time_format = '%m/%d %H:00'
+                delta = timedelta(hours=1)
+            else:
+                time_format = '%m/%d'
+                delta = timedelta(days=1)
+            
+            # Generate time slots from data range
+            all_time_slots = []
+            current_time = cutoff
+            while current_time <= max_time:
+                all_time_slots.append(current_time.strftime(time_format))
+                current_time += delta
+            
+            df_filtered = df_valid.copy()
         else:
-            cutoff = now - timedelta(hours=1)
-            time_format = '%H:%M'
-            delta = timedelta(minutes=1)
+            if time_range == "1h":
+                cutoff = now - timedelta(hours=1)
+                time_format = '%H:%M'
+                delta = timedelta(minutes=1)
+            elif time_range == "1d":
+                cutoff = now - timedelta(days=1)
+                time_format = '%m/%d %H:00'
+                delta = timedelta(hours=1)
+            elif time_range == "1w":
+                cutoff = now - timedelta(weeks=1)
+                time_format = '%m/%d'
+                delta = timedelta(days=1)
+            elif time_range == "1m":
+                cutoff = now - timedelta(days=30)
+                time_format = '%m/%d'
+                delta = timedelta(days=1)
+            else:
+                cutoff = now - timedelta(hours=1)
+                time_format = '%H:%M'
+                delta = timedelta(minutes=1)
+            
+            # Generate all time slots in the range
+            all_time_slots = []
+            current_time = cutoff
+            while current_time <= now:
+                all_time_slots.append(current_time.strftime(time_format))
+                current_time += delta
+            
+            # Filter logs by time range
+            df_filtered = df_valid[df_valid['datetime'] >= cutoff].copy()
         
-        # Generate all time slots in the range
-        all_time_slots = []
-        current_time = cutoff
-        while current_time <= now:
-            all_time_slots.append(current_time.strftime(time_format))
-            current_time += delta
-        
-        # Filter logs by time range
-        df_filtered = df_valid[df_valid['datetime'] >= cutoff].copy()
+        # Calculate filtered totals and levels
+        filtered_total = len(df_filtered)
+        if len(df_filtered) > 0:
+            filtered_levels = df_filtered["level"].value_counts().to_dict()
+        else:
+            filtered_levels = {}
         
         # Group by time format
         if len(df_filtered) > 0:
@@ -176,5 +231,7 @@ def get_log_stats(host, time_range="1h"):
     return {
         "total": len(logs),
         "levels": level_counts,
-        "time_series": time_series
+        "time_series": time_series,
+        "filtered_total": filtered_total,
+        "filtered_levels": filtered_levels
     }
