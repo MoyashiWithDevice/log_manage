@@ -89,6 +89,13 @@ def translate_text(request: TranslationRequest):
         raise HTTPException(status_code=500, detail=result["error"])
     return result
 
+@app.get("/config/ui")
+def get_ui_config():
+    """Get UI-related configuration"""
+    return {
+        "max_logs_to_display": config.get('ui.max_logs_to_display', 500)
+    }
+
 @app.post("/config/reload")
 def reload_configuration():
     """Reload configuration from file"""

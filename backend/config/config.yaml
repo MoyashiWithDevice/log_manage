@@ -54,6 +54,11 @@ server:
       - "http://localhost:5173"
       - "http://localhost:3000"
 
+# UI設定
+ui:
+  # ログビューアーに表示する最大ログ件数
+  max_logs_to_display: 500
+
 # AI分析設定
 ai:
   # Gemini API設定

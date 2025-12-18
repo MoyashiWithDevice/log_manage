@@ -15,6 +15,9 @@ const LogViewer = ({ selectedHost }) => {
     const [translatedAnalysis, setTranslatedAnalysis] = useState("");
     const [loadingTranslation, setLoadingTranslation] = useState(false);
     const analysisRef = useRef(null);
+    
+    // UI configuration from backend
+    const [maxLogsToDisplay, setMaxLogsToDisplay] = useState(500);
 
     // Filtering states
     const [filterLevel, setFilterLevel] = useState("ALL");
@@ -29,6 +32,21 @@ const LogViewer = ({ selectedHost }) => {
     // Pagination states
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
+
+    // Fetch UI config on mount
+    useEffect(() => {
+        const fetchUiConfig = async () => {
+            try {
+                const response = await axios.get(`${API_URL}/config/ui`);
+                if (response.data.max_logs_to_display) {
+                    setMaxLogsToDisplay(response.data.max_logs_to_display);
+                }
+            } catch (error) {
+                console.error("Error fetching UI config:", error);
+            }
+        };
+        fetchUiConfig();
+    }, []);
 
     useEffect(() => {
         if (selectedHost) {
@@ -64,7 +82,7 @@ const LogViewer = ({ selectedHost }) => {
         setTranslatedAnalysis("");
 
         try {
-            const logLines = filteredLogs.slice(0, 50).map(l => l.raw);
+            const logLines = filteredLogs.slice(0, maxLogsToDisplay).map(l => l.raw);
             const response = await axios.post(`${API_URL}/analyze`, { logs: logLines });
             setAnalysis(response.data.analysis);
         } catch (error) {
