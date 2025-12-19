@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import axios from 'axios';
 import Dashboard from './components/Dashboard';
 import LogViewer from './components/LogViewer';
@@ -81,14 +81,12 @@ function DashboardPage() {
 }
 
 function App() {
-  return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<DashboardPage />} />
-        <Route path="/logs/:host" element={<LogListPage />} />
-      </Routes>
-    </Router>
-  );
+  return <RouterProvider router={router} />;
 }
+
+const router = createBrowserRouter([
+  { path: '/', element: <DashboardPage /> },
+  { path: '/logs/:host', element: <LogListPage /> },
+]);
 
 export default App;
