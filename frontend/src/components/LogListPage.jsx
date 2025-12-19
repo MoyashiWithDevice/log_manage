@@ -262,7 +262,7 @@ const LogListPage = () => {
                                 {formatHostName(selectedHost)} - 全ログ一覧
                             </h2>
                             <p className="text-sm text-slate-400 mt-1">
-                                {filteredLogs.length}件表示中 {hasMore && "(スクロールで続きを読み込み)"}
+                                {filteredLogs.length}件表示中
                             </p>
                         </div>
                     </div>
@@ -388,12 +388,12 @@ const LogListPage = () => {
                                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                 </svg>
-                                <span className="text-slate-400 text-sm">ログを読み込み中...</span>
+                                <span className="text-slate-400 text-sm">loading...</span>
                             </div>
                         ) : hasMore ? (
-                            <span className="text-slate-500 text-sm">↓ スクロールで続きを読み込み</span>
+                            <span className="text-slate-500 text-sm">↓ more</span>
                         ) : (
-                            <span className="text-slate-500 text-sm">すべてのログを読み込みました</span>
+                            <span className="text-slate-500 text-sm">load complete</span>
                         )}
                     </div>
                 </div>
