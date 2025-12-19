@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, AreaChart, Area } from 'recharts';
+import { XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area } from 'recharts';
 
 // API requests are proxied through Vite dev server
 const API_URL = '/api';
@@ -232,40 +232,6 @@ const Dashboard = ({ selectedHost }) => {
                 </div>
             </div>
 
-            {/* Time-Series Stacked Bar Chart */}
-            {stats.time_series && stats.time_series.length > 0 && (
-                <div className="bg-slate-800/50 backdrop-blur border border-slate-700 p-6 rounded-xl shadow-lg">
-                    <div className="flex items-center justify-between mb-6">
-                        <h3 className="text-lg font-bold text-white flex items-center">
-                            <svg className="w-5 h-5 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" /></svg>
-                            ログレベル時系列推移（積み上げグラフ）
-                        </h3>
-                    </div>
-                    <div className="h-64 w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={stats.time_series} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.3} />
-                                <XAxis
-                                    dataKey="time"
-                                    stroke="#94a3b8"
-                                    tick={{ fontSize: 11 }}
-                                    interval="preserveStartEnd"
-                                    angle={-45}
-                                    textAnchor="end"
-                                    height={60}
-                                />
-                                <YAxis stroke="#94a3b8" tick={{ fontSize: 11 }} />
-                                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(59, 130, 246, 0.1)' }} />
-                                <Legend iconType="circle" wrapperStyle={{ fontSize: '12px' }} />
-                                <Bar dataKey="INFO" stackId="a" fill="#10B981" barSize={8} name="INFO" />
-                                <Bar dataKey="WARN" stackId="a" fill="#F59E0B" barSize={8} name="WARNING" />
-                                <Bar dataKey="ERROR" stackId="a" fill="#EF4444" barSize={8} name="ERROR" />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
-            )}
-
             {/* Combined Log Level Trend Chart */}
             {stats.time_series && stats.time_series.length > 0 && (
                 <div className="bg-slate-800/50 backdrop-blur border border-slate-700 p-6 rounded-xl shadow-lg">
@@ -296,16 +262,16 @@ const Dashboard = ({ selectedHost }) => {
                             <AreaChart data={stats.time_series} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
                                 <defs>
                                     <linearGradient id="colorError" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#EF4444" stopOpacity={0.3}/>
-                                        <stop offset="95%" stopColor="#EF4444" stopOpacity={0}/>
+                                        <stop offset="5%" stopColor="#EF4444" stopOpacity={0.3} />
+                                        <stop offset="95%" stopColor="#EF4444" stopOpacity={0} />
                                     </linearGradient>
                                     <linearGradient id="colorWarn" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#F59E0B" stopOpacity={0.3}/>
-                                        <stop offset="95%" stopColor="#F59E0B" stopOpacity={0}/>
+                                        <stop offset="5%" stopColor="#F59E0B" stopOpacity={0.3} />
+                                        <stop offset="95%" stopColor="#F59E0B" stopOpacity={0} />
                                     </linearGradient>
                                     <linearGradient id="colorInfo" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#10B981" stopOpacity={0.3}/>
-                                        <stop offset="95%" stopColor="#10B981" stopOpacity={0}/>
+                                        <stop offset="5%" stopColor="#10B981" stopOpacity={0.3} />
+                                        <stop offset="95%" stopColor="#10B981" stopOpacity={0} />
                                     </linearGradient>
                                 </defs>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.3} />

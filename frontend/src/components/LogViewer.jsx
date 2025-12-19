@@ -15,7 +15,7 @@ const LogViewer = ({ selectedHost }) => {
     const [translatedAnalysis, setTranslatedAnalysis] = useState("");
     const [loadingTranslation, setLoadingTranslation] = useState(false);
     const analysisRef = useRef(null);
-    
+
     // UI configuration from backend
     const [maxLogsToDisplay, setMaxLogsToDisplay] = useState(500);
 
@@ -66,7 +66,7 @@ const LogViewer = ({ selectedHost }) => {
 
     const fetchLogs = async () => {
         try {
-            const response = await axios.get(`${API_URL}/logs/${selectedHost}?limit=50`);
+            const response = await axios.get(`${API_URL}/logs/${selectedHost}?limit=500`);
             setLogs(response.data);
         } catch (error) {
             console.error("Error fetching logs:", error);
@@ -309,7 +309,7 @@ const LogViewer = ({ selectedHost }) => {
 
     const formatTimestamp = (timestamp) => {
         if (!timestamp) return '-';
-        
+
         try {
             // Handle ISO 8601 format with T (e.g., 2025-12-17T23:00:19.900707+09:00)
             if (timestamp.includes('T')) {
@@ -319,7 +319,7 @@ const LogViewer = ({ selectedHost }) => {
                     return `${match[1]} ${match[2]}`;
                 }
             }
-            
+
             // Handle syslog format with year prefix (e.g., 2025 Nov 26 14:23:30)
             const syslogMatch = timestamp.match(/^(\d{4})\s+([A-Z][a-z]{2})\s+(\d+)\s+(\d{2}:\d{2}:\d{2})/);
             if (syslogMatch) {
@@ -329,12 +329,12 @@ const LogViewer = ({ selectedHost }) => {
                 const day = syslogMatch[3].padStart(2, '0');
                 return `${syslogMatch[1]}-${month}-${day} ${syslogMatch[4]}`;
             }
-            
+
             // Handle simple ISO format (e.g., 2024-01-01 12:00:00)
             if (timestamp.match(/^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}/)) {
                 return timestamp.substring(0, 19);
             }
-            
+
             // Return as-is if format is unknown
             return timestamp;
         } catch (e) {
