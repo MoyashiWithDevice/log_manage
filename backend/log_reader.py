@@ -43,12 +43,12 @@ def parse_syslog_line(line):
         }
     return None
 
-def get_logs(host, limit=100):
+def get_logs(host, limit=100, offset=0):
     """Get logs for a specific host using configuration-based parser"""
     config = get_config()
     from log_parser import LogParser
     parser = LogParser(config)
-    return parser.get_logs_for_host(host, limit)
+    return parser.get_logs_for_host(host, limit, offset)
 
 def get_log_stats(host, time_range="1h"):
     """Get statistics for a specific host using configuration-based parser"""

@@ -61,9 +61,9 @@ def list_hosts():
     return get_hosts()
 
 @app.get("/logs/{host}")
-def read_logs(host: str, limit: int = 100):
+def read_logs(host: str, limit: int = 100, offset: int = 0):
     try:
-        return get_logs(host, limit)
+        return get_logs(host, limit, offset)
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="Host not found")
 

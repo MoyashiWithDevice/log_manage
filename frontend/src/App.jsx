@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import axios from 'axios';
 import Dashboard from './components/Dashboard';
 import LogViewer from './components/LogViewer';
+import LogListPage from './components/LogListPage';
 
 // API requests are proxied through Vite dev server
 const API_URL = '/api';
 
-function App() {
+// Main Dashboard Page Component
+function DashboardPage() {
   const [hosts, setHosts] = useState([]);
   const [selectedHost, setSelectedHost] = useState("");
 
@@ -74,6 +77,17 @@ function App() {
         <LogViewer selectedHost={selectedHost} />
       </main>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<DashboardPage />} />
+        <Route path="/logs/:host" element={<LogListPage />} />
+      </Routes>
+    </Router>
   );
 }
 

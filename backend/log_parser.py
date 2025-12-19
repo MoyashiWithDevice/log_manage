@@ -306,13 +306,14 @@ class LogParser:
         
         return logs
     
-    def get_logs_for_host(self, host: str, limit: int = 1000) -> List[Dict[str, Any]]:
+    def get_logs_for_host(self, host: str, limit: int = 1000, offset: int = 0) -> List[Dict[str, Any]]:
         """
-        Get logs for a specific host
+        Get logs for a specific host with pagination
         
         Args:
             host: Host name
             limit: Maximum number of logs to return
+            offset: Number of logs to skip (for pagination)
         
         Returns:
             List of log entries
@@ -328,9 +329,9 @@ class LogParser:
             logs = self.parse_log_file(file_path)
             all_logs.extend(logs)
         
-        # Sort by timestamp (if available) and limit
+        # Sort by timestamp (if available) and apply pagination
         all_logs.sort(key=lambda x: x.get('timestamp', ''), reverse=True)
-        return all_logs[:limit]
+        return all_logs[offset:offset + limit]
     
     def get_all_hosts(self) -> List[str]:
         """
