@@ -1,5 +1,7 @@
 *.env
 backend/__pycache__
+backend/tests/__pycache__/
+backend/.pytest_cache/
 logs/
 .venv/
 frontend/node_modules/
