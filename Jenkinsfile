@@ -14,6 +14,7 @@ pipeline {
     DISCORD_CRED= 'discord-webhook-url'
   }
 
+
   stages {
     stage('Frontend Test') {
       steps {
