@@ -9,15 +9,16 @@ pipeline {
       steps {
         script {
           try {
-            sh 'docker run --rm ... frontend-test'
+            sh 'docker build -t frontend-test -f frontend/Dockerfile.ci frontend'
+            sh 'docker run --rm frontend-test'
             discordNotify(
               credId: 'discord-webhook-url',
-              message: "✅ frontend test OK: ${env.JOB_NAME} #${env.BUILD_NUMBER}"
+              message: "[OK] frontend test OK: ${env.JOB_NAME} #${env.BUILD_NUMBER}"
             )
           } catch (e) {
             discordNotify(
               credId: 'discord-webhook-url',
-              message: "❌ frontend test FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}"
+              message: "[NG] frontend test FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}"
             )
             throw e
           }
@@ -29,15 +30,16 @@ pipeline {
       steps {
         script {
           try {
-            sh 'docker run --rm ... backend-test'
+            sh 'docker build -t backend-test -f backend/Dockerfile.ci backend'
+            sh 'docker run --rm backend-test'
             discordNotify(
               credId: 'discord-webhook-url',
-              message: "✅ backend test OK: ${env.JOB_NAME} #${env.BUILD_NUMBER}"
+              message: "[OK] backend test OK: ${env.JOB_NAME} #${env.BUILD_NUMBER}"
             )
           } catch (e) {
             discordNotify(
               credId: 'discord-webhook-url',
-              message: "❌ backend test FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}"
+              message: "[NG] backend test FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}"
             )
             throw e
           }
@@ -50,13 +52,13 @@ pipeline {
     success {
       discordNotify(
         credId: 'discord-webhook-url',
-        message: "🎉 pipeline SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}"
+        message: "[OK] pipeline SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}"
       )
     }
     failure {
       discordNotify(
         credId: 'discord-webhook-url',
-        message: "🔥 pipeline FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}"
+        message: "[NG] pipeline FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}"
       )
     }
   }
