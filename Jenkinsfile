@@ -37,7 +37,7 @@ pipeline {
         script {
           try {
             sh '''
-              set -euo pipefail
+              set -eu
               docker build -t frontend-build -f frontend/Dockerfile.build frontend
               CID="$(docker create frontend-build)"
               rm -rf frontend_dist
@@ -60,7 +60,7 @@ pipeline {
           script {
             try {
               sh '''
-                set -euo pipefail
+                set -eu
                 rsync -av --delete -e "ssh -o StrictHostKeyChecking=no" frontend_dist/ \
                   deploy@${DEPLOY_HOST}:${FRONT_DST}/
               '''
@@ -96,12 +96,12 @@ pipeline {
           script {
             try {
               sh '''
-                set -euo pipefail
+                set -eu
                 rsync -av --delete -e "ssh -o StrictHostKeyChecking=no" backend/ \
                   deploy@${DEPLOY_HOST}:${BACK_DST}/
 
                 ssh -o StrictHostKeyChecking=no deploy@${DEPLOY_HOST} "
-                  set -euo pipefail
+                  set -eu
                   ${VENV_PIP} install -r ${BACK_DST}/requirements.txt
                   sudo systemctl restart ${BACK_SERVICE}
                 "
