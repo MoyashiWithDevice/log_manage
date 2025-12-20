@@ -101,6 +101,11 @@ pipeline {
 
                 ssh -o StrictHostKeyChecking=no deploy@${DEPLOY_HOST} "
                   set -eu
+
+                  if [ ! -d venv ]; then
+                    python3 -m venv venv
+                  fi
+
                   ${VENV_PIP} install -r ${BACK_DST}/requirements.txt
                   sudo systemctl restart ${BACK_SERVICE}
                 "
