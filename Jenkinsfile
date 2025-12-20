@@ -4,6 +4,16 @@ pipeline {
   agent any
   options { timestamps() }
 
+  environment {
+    DEPLOY_HOST = '172.31.0.6'
+    FRONT_DST   = '/home/deploy/log-manage/frontend'
+    BACK_DST    = '/home/deploy/log_manage/backend'
+    VENV_PIP    = '/home/deploy/log_manage/backend/venv/bin/pip'
+    BACK_SERVICE= 'log-manage-backend.service'
+    SSH_CRED_ID = 'ssh-private-key'
+    DISCORD_CRED= 'discord-webhook-url'
+  }
+
   stages {
     stage('Frontend Test') {
       steps {
@@ -11,15 +21,9 @@ pipeline {
           try {
             sh 'docker build -t frontend-test -f frontend/Dockerfile.ci frontend'
             sh 'docker run --rm frontend-test'
-            discordNotify(
-              credId: 'discord-webhook-url',
-              message: "[OK] frontend test OK: ${env.JOB_NAME} #${env.BUILD_NUMBER}"
-            )
+            discordNotify(credId: env.DISCORD_CRED, message: "[OK] frontend test OK: ${env.JOB_NAME} #${env.BUILD_NUMBER}")
           } catch (e) {
-            discordNotify(
-              credId: 'discord-webhook-url',
-              message: "[NG] frontend test FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}"
-            )
+            discordNotify(credId: env.DISCORD_CRED, message: "[NG] frontend test FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}\n${env.BUILD_URL}")
             throw e
           }
         }
@@ -27,30 +31,46 @@ pipeline {
     }
 
     stage('Frontend Build') {
-        steps {
-            script {
+      when { branch 'main' }
+      steps {
+        script {
+          try {
             sh '''
-                docker build -t frontend-build -f frontend/Dockerfile.build frontend
-                docker create --name frontend-build-container frontend-build
-                rm -rf frontend_dist
-                docker cp frontend-build-container:/work/dist ./frontend_dist
-                docker rm frontend-build-container
+              set -euo pipefail
+              docker build -t frontend-build -f frontend/Dockerfile.build frontend
+              CID="$(docker create frontend-build)"
+              rm -rf frontend_dist
+              docker cp "${CID}:/work/dist" ./frontend_dist
+              docker rm -f "${CID}"
             '''
-            }
+            discordNotify(credId: env.DISCORD_CRED, message: "[OK] frontend build OK: ${env.JOB_NAME} #${env.BUILD_NUMBER}")
+          } catch (e) {
+            discordNotify(credId: env.DISCORD_CRED, message: "[NG] frontend build FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}\n${env.BUILD_URL}")
+            throw e
+          }
         }
+      }
     }
 
     stage('Deploy Frontend') {
-        steps {
-            sh '''
-            rsync -av --delete frontend_dist/ \
-                deploy@172.31.0.6:/var/www/log-manage/
-            '''
-            discordNotify(
-                credId: 'discord-webhook-url',
-                message: "[OK] frontend deployed"
-            )
+      when { branch 'main' }
+      steps {
+        sshagent(credentials: [env.SSH_CRED_ID]) {
+          script {
+            try {
+              sh '''
+                set -euo pipefail
+                rsync -av --delete -e "ssh -o StrictHostKeyChecking=no" frontend_dist/ \
+                  deploy@${DEPLOY_HOST}:${FRONT_DST}/
+              '''
+              discordNotify(credId: env.DISCORD_CRED, message: "[OK] frontend deployed: ${env.JOB_NAME} #${env.BUILD_NUMBER}")
+            } catch (e) {
+              discordNotify(credId: env.DISCORD_CRED, message: "[NG] frontend deploy FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}\n${env.BUILD_URL}")
+              throw e
+            }
+          }
         }
+      }
     }
 
     stage('Backend Test') {
@@ -59,66 +79,49 @@ pipeline {
           try {
             sh 'docker build -t backend-test -f backend/Dockerfile.ci backend'
             sh 'docker run --rm backend-test'
-            discordNotify(
-              credId: 'discord-webhook-url',
-              message: "[OK] backend test OK: ${env.JOB_NAME} #${env.BUILD_NUMBER}"
-            )
+            discordNotify(credId: env.DISCORD_CRED, message: "[OK] backend test OK: ${env.JOB_NAME} #${env.BUILD_NUMBER}")
           } catch (e) {
-            discordNotify(
-              credId: 'discord-webhook-url',
-              message: "[NG] backend test FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}"
-            )
+            discordNotify(credId: env.DISCORD_CRED, message: "[NG] backend test FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}\n${env.BUILD_URL}")
             throw e
           }
         }
       }
     }
 
-    stage('Deploy Backend') {
-        when {
-            branch 'main'
-        }
-        steps {
-            script {
-            sh '''
-                rsync -av --delete backend/ deploy@172.31.0.6:/home/deploy/log_manage/backend/
-            '''
-            }
-        }
-    }
+    stage('Deploy & Restart Backend') {
+      when { branch 'main' }
+      steps {
+        sshagent(credentials: [env.SSH_CRED_ID]) {
+          script {
+            try {
+              sh '''
+                set -euo pipefail
+                rsync -av --delete -e "ssh -o StrictHostKeyChecking=no" backend/ \
+                  deploy@${DEPLOY_HOST}:${BACK_DST}/
 
-    stage('Restart Backend') {
-        when {
-            branch 'main'
+                ssh -o StrictHostKeyChecking=no deploy@${DEPLOY_HOST} "
+                  set -euo pipefail
+                  ${VENV_PIP} install -r ${BACK_DST}/requirements.txt
+                  sudo systemctl restart ${BACK_SERVICE}
+                "
+              '''
+              discordNotify(credId: env.DISCORD_CRED, message: "[OK] backend deployed: ${env.JOB_NAME} #${env.BUILD_NUMBER}")
+            } catch (e) {
+              discordNotify(credId: env.DISCORD_CRED, message: "[NG] backend deploy FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}\n${env.BUILD_URL}")
+              throw e
+            }
+          }
         }
-        steps {
-            sh '''
-            ssh deploy@172.31.0.6 '
-                source /home/deploy/log_manage/venv/bin/activate &&
-                pip install -r /home/deploy/log_manage/backend/requirements.txt &&
-                sudo systemctl restart log-manage-backend.service
-            '
-            '''
-            discordNotify(
-                credId: 'discord-webhook-url',
-                message: "[OK] backend deployed"
-            )
-        }
+      }
     }
-}
+  }
 
   post {
     success {
-      discordNotify(
-        credId: 'discord-webhook-url',
-        message: "[OK] pipeline SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}"
-      )
+      discordNotify(credId: env.DISCORD_CRED, message: "[OK] pipeline SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}")
     }
     failure {
-      discordNotify(
-        credId: 'discord-webhook-url',
-        message: "[NG] pipeline FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}"
-      )
+      discordNotify(credId: env.DISCORD_CRED, message: "[NG] pipeline FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}\n${env.BUILD_URL}")
     }
   }
 }
