@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import ReactMarkdown from 'react-markdown';
@@ -34,6 +34,16 @@ const LogViewer = ({ selectedHost }) => {
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 10;
 
+    const fetchLogs = useCallback(async () => {
+        if (!selectedHost) return;
+        try {
+            const response = await axios.get(`${API_URL}/logs/${selectedHost}?limit=500`);
+            setLogs(response.data);
+        } catch (error) {
+            console.error("Error fetching logs:", error);
+        }
+    }, [selectedHost]);
+
     // Fetch UI config on mount
     useEffect(() => {
         const fetchUiConfig = async () => {
@@ -63,16 +73,7 @@ const LogViewer = ({ selectedHost }) => {
             setCurrentPage(1);
             setSortField("");
         }
-    }, [selectedHost]);
-
-    const fetchLogs = async () => {
-        try {
-            const response = await axios.get(`${API_URL}/logs/${selectedHost}?limit=500`);
-            setLogs(response.data);
-        } catch (error) {
-            console.error("Error fetching logs:", error);
-        }
-    };
+    }, [selectedHost, fetchLogs]);
 
     const handleAnalyze = async () => {
         if (loadingAnalysis) return;
@@ -299,15 +300,6 @@ const LogViewer = ({ selectedHost }) => {
         }
     };
 
-    const formatHostName = (host) => {
-        // Capitalize first letter and replace underscores/hyphens with spaces
-        return host
-            .replace(/[-_]/g, ' ')
-            .split(' ')
-            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-            .join(' ');
-    };
-
     const formatTimestamp = (timestamp) => {
         if (!timestamp) return '-';
 
@@ -338,7 +330,7 @@ const LogViewer = ({ selectedHost }) => {
 
             // Return as-is if format is unknown
             return timestamp;
-        } catch (e) {
+        } catch {
             return timestamp;
         }
     };

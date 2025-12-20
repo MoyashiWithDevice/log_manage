@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import axios from 'axios';
 import Dashboard from './components/Dashboard';
@@ -13,11 +13,7 @@ function DashboardPage() {
   const [hosts, setHosts] = useState([]);
   const [selectedHost, setSelectedHost] = useState("");
 
-  useEffect(() => {
-    fetchHosts();
-  }, []);
-
-  const fetchHosts = async () => {
+  const fetchHosts = useCallback(async () => {
     console.log('Fetching hosts from API...');
     try {
       const response = await axios.get(`${API_URL}/hosts`);
@@ -33,7 +29,11 @@ function DashboardPage() {
       console.error("Error fetching hosts:", error);
       console.error("Error details:", error.response || error.message);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchHosts();
+  }, [fetchHosts]);
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-200 font-sans selection:bg-blue-500 selection:text-white">

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area } from 'recharts';
 
@@ -9,20 +9,21 @@ const Dashboard = ({ selectedHost }) => {
     const [stats, setStats] = useState(null);
     const [timeRange, setTimeRange] = useState("all");
 
-    useEffect(() => {
-        if (selectedHost) {
-            fetchStats();
-        }
-    }, [selectedHost, timeRange]);
-
-    const fetchStats = async () => {
+    const fetchStats = useCallback(async () => {
+        if (!selectedHost) return;
         try {
             const response = await axios.get(`${API_URL}/stats/${selectedHost}?time_range=${timeRange}`);
             setStats(response.data);
         } catch (error) {
             console.error("Error fetching stats:", error);
         }
-    };
+    }, [selectedHost, timeRange]);
+
+    useEffect(() => {
+        if (selectedHost) {
+            fetchStats();
+        }
+    }, [fetchStats]);
 
     const formatHostName = (host) => {
         // Capitalize first letter and replace underscores/hyphens with spaces
@@ -46,11 +47,6 @@ const Dashboard = ({ selectedHost }) => {
 
     if (!selectedHost) return <div className="p-4 text-gray-500">Select a host to view statistics.</div>;
     if (!stats) return <div className="p-4">Loading stats...</div>;
-
-    const data = Object.keys(stats.levels).map(key => ({
-        name: key,
-        value: stats.levels[key]
-    }));
 
     const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
 

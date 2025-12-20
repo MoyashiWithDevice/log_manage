@@ -16,6 +16,9 @@ const LogListPage = () => {
     const [selectedHost, setSelectedHost] = useState(host || '');
     const observerRef = useRef(null);
     const loadingRef = useRef(null);
+    const offsetRef = useRef(0);
+    const hasMoreRef = useRef(true);
+    const isLoadingRef = useRef(false);
 
     // Filtering states
     const [filterLevel, setFilterLevel] = useState("ALL");
@@ -54,11 +57,12 @@ const LogListPage = () => {
 
     // Fetch logs
     const fetchLogs = useCallback(async (reset = false) => {
-        if (!selectedHost || loading) return;
-        if (!reset && !hasMore) return;
+        if (!selectedHost || isLoadingRef.current) return;
+        if (!reset && !hasMoreRef.current) return;
 
         setLoading(true);
-        const currentOffset = reset ? 0 : offset;
+        isLoadingRef.current = true;
+        const currentOffset = reset ? 0 : offsetRef.current;
 
         try {
             const response = await axios.get(
@@ -69,34 +73,36 @@ const LogListPage = () => {
 
             if (reset) {
                 setLogs(newLogs);
+                offsetRef.current = BATCH_SIZE;
                 setOffset(BATCH_SIZE);
             } else {
                 setLogs(prev => [...prev, ...newLogs]);
-                setOffset(prev => prev + BATCH_SIZE);
+                offsetRef.current += BATCH_SIZE;
+                setOffset(offsetRef.current);
             }
 
-            // If we got fewer logs than requested, there are no more
-            if (newLogs.length < BATCH_SIZE) {
-                setHasMore(false);
-            } else {
-                setHasMore(true);
-            }
+            const hasMoreData = newLogs.length >= BATCH_SIZE;
+            hasMoreRef.current = hasMoreData;
+            setHasMore(hasMoreData);
         } catch (error) {
             console.error("Error fetching logs:", error);
         } finally {
+            isLoadingRef.current = false;
             setLoading(false);
         }
-    }, [selectedHost, offset, hasMore, loading]);
+    }, [selectedHost]);
 
     // Reset and fetch when host changes
     useEffect(() => {
         if (selectedHost) {
             setLogs([]);
             setOffset(0);
+            offsetRef.current = 0;
             setHasMore(true);
+            hasMoreRef.current = true;
             fetchLogs(true);
         }
-    }, [selectedHost]);
+    }, [selectedHost, fetchLogs]);
 
     // Intersection Observer for infinite scroll
     useEffect(() => {
@@ -161,7 +167,7 @@ const LogListPage = () => {
             }
 
             return timestamp;
-        } catch (e) {
+        } catch {
             return timestamp;
         }
     };
