@@ -4,7 +4,6 @@ pipeline {
   agent any
   options { timestamps() }
 
-
   environment {
     DEPLOY_HOST = '172.31.0.6'
     FRONT_DST   = '/home/deploy/log-manage/frontend'
