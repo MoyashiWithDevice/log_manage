@@ -38,7 +38,7 @@ pipeline {
           try {
             sh '''
               set -eu
-              docker build -t frontend-build -f frontend/Dockerfile.build frontend
+              docker build -t frontend-build -f frontend/Dockerfile.ci frontend
               CID="$(docker create frontend-build)"
               rm -rf frontend_dist
               docker cp "${CID}:/work/dist" ./frontend_dist
