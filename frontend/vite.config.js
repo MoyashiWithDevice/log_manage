@@ -7,9 +7,20 @@ import { fileURLToPath } from 'url'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-// Load settings from root settings.json
+// Load settings from root settings.json (optional for build)
 const settingsPath = path.resolve(__dirname, '../settings.json')
-const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf-8'))
+let settings = {
+  frontend: { host: 'localhost', port: 3000 },
+  backend: { host: 'localhost', port: 8000 }
+}
+
+try {
+  if (fs.existsSync(settingsPath)) {
+    settings = JSON.parse(fs.readFileSync(settingsPath, 'utf-8'))
+  }
+} catch {
+  // Use default settings if file cannot be read
+}
 
 // https://vite.dev/config/
 export default defineConfig({
