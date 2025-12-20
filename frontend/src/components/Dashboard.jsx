@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area } from 'recharts';
 
@@ -46,22 +46,18 @@ const Dashboard = ({ selectedHost }) => {
     const [stats, setStats] = useState(null);
     const [timeRange, setTimeRange] = useState("all");
 
-    const fetchStats = useCallback(async () => {
-        if (!selectedHost) return;
-        try {
-            const response = await axios.get(`${API_URL}/stats/${selectedHost}?time_range=${timeRange}`);
-            setStats(response.data);
-        } catch (error) {
-            console.error("Error fetching stats:", error);
-        }
-    }, [selectedHost, timeRange]);
-
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     useEffect(() => {
-        if (selectedHost) {
-            fetchStats();
-        }
-    }, [fetchStats, selectedHost]);
+        if (!selectedHost) return;
+        const fetchStats = async () => {
+            try {
+                const response = await axios.get(`${API_URL}/stats/${selectedHost}?time_range=${timeRange}`);
+                setStats(response.data);
+            } catch (error) {
+                console.error("Error fetching stats:", error);
+            }
+        };
+        fetchStats();
+    }, [selectedHost, timeRange]);
 
     const formatHostName = (host) => {
         // Capitalize first letter and replace underscores/hyphens with spaces

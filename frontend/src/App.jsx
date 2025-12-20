@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import axios from 'axios';
 import Dashboard from './components/Dashboard';
@@ -13,28 +13,26 @@ function DashboardPage() {
   const [hosts, setHosts] = useState([]);
   const [selectedHost, setSelectedHost] = useState("");
 
-  const fetchHosts = useCallback(async () => {
-    console.log('Fetching hosts from API...');
-    try {
-      const response = await axios.get(`${API_URL}/hosts`);
-      console.log('API Response:', response.data);
-      setHosts(response.data);
-      if (response.data.length > 0) {
-        console.log('Setting selected host to:', response.data[0]);
-        setSelectedHost(response.data[0]);
-      } else {
-        console.warn('No hosts returned from API');
-      }
-    } catch (error) {
-      console.error("Error fetching hosts:", error);
-      console.error("Error details:", error.response || error.message);
-    }
-  }, []);
-
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
+    const fetchHosts = async () => {
+      console.log('Fetching hosts from API...');
+      try {
+        const response = await axios.get(`${API_URL}/hosts`);
+        console.log('API Response:', response.data);
+        setHosts(response.data);
+        if (response.data.length > 0) {
+          console.log('Setting selected host to:', response.data[0]);
+          setSelectedHost(response.data[0]);
+        } else {
+          console.warn('No hosts returned from API');
+        }
+      } catch (error) {
+        console.error("Error fetching hosts:", error);
+        console.error("Error details:", error.response || error.message);
+      }
+    };
     fetchHosts();
-  }, [fetchHosts]);
+  }, []);
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-200 font-sans selection:bg-blue-500 selection:text-white">
