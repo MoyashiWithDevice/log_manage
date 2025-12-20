@@ -6,7 +6,7 @@ pipeline {
 
   environment {
     DEPLOY_HOST = '172.31.0.6'
-    FRONT_DST   = '/home/deploy/log-manage/frontend'
+    FRONT_DST   = '/home/deploy/log_manage/frontend'
     BACK_DST    = '/home/deploy/log_manage/backend'
     VENV_PIP    = '/home/deploy/log_manage/backend/venv/bin/pip'
     BACK_SERVICE= 'log-manage-backend.service'
