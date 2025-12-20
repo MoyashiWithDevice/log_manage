@@ -1,4 +1,4 @@
-@Library('ci-lib') _
+@Library('discord-hooks') _
 
 pipeline {
   agent any
