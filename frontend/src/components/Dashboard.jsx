@@ -5,6 +5,43 @@ import { XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Area
 // API requests are proxied through Vite dev server
 const API_URL = '/api';
 
+// Custom Tooltip for Time-Series Chart (must be defined outside render)
+const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+        return (
+            <div className="bg-slate-900/95 backdrop-blur-xl border border-blue-500/30 rounded-lg shadow-2xl shadow-blue-500/20 p-4 transition-all duration-200 animate-in fade-in-0 zoom-in-95">
+                <div className="flex items-center space-x-2 mb-3 pb-2 border-b border-slate-700/50">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                    <p className="text-xs font-medium text-slate-300 uppercase tracking-wider">{label}</p>
+                </div>
+                <div className="space-y-2">
+                    {payload.map((entry, index) => (
+                        <div key={index} className="flex items-center justify-between space-x-4 group">
+                            <div className="flex items-center space-x-2">
+                                <div
+                                    className="w-3 h-3 rounded-sm transition-transform group-hover:scale-110"
+                                    style={{ backgroundColor: entry.color }}
+                                ></div>
+                                <span className="text-sm font-medium text-slate-200">{entry.name}</span>
+                            </div>
+                            <span className="text-sm font-bold text-white tabular-nums">{entry.value}</span>
+                        </div>
+                    ))}
+                </div>
+                <div className="mt-3 pt-2 border-t border-slate-700/50">
+                    <div className="flex items-center justify-between">
+                        <span className="text-xs text-slate-400">Total</span>
+                        <span className="text-sm font-bold text-blue-400 tabular-nums">
+                            {payload.reduce((sum, entry) => sum + entry.value, 0)}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+    return null;
+};
+
 const Dashboard = ({ selectedHost }) => {
     const [stats, setStats] = useState(null);
     const [timeRange, setTimeRange] = useState("all");
@@ -19,11 +56,12 @@ const Dashboard = ({ selectedHost }) => {
         }
     }, [selectedHost, timeRange]);
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     useEffect(() => {
         if (selectedHost) {
             fetchStats();
         }
-    }, [fetchStats]);
+    }, [fetchStats, selectedHost]);
 
     const formatHostName = (host) => {
         // Capitalize first letter and replace underscores/hyphens with spaces
@@ -54,43 +92,6 @@ const Dashboard = ({ selectedHost }) => {
     const filteredTotal = stats.filtered_total !== undefined ? stats.filtered_total : stats.total;
     // If filtered_levels exists but is empty, that means no logs in the time range, so show 0s
     const filteredLevels = stats.filtered_levels !== undefined ? stats.filtered_levels : stats.levels;
-
-    // Custom Tooltip for Time-Series Chart
-    const CustomTooltip = ({ active, payload, label }) => {
-        if (active && payload && payload.length) {
-            return (
-                <div className="bg-slate-900/95 backdrop-blur-xl border border-blue-500/30 rounded-lg shadow-2xl shadow-blue-500/20 p-4 transition-all duration-200 animate-in fade-in-0 zoom-in-95">
-                    <div className="flex items-center space-x-2 mb-3 pb-2 border-b border-slate-700/50">
-                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                        <p className="text-xs font-medium text-slate-300 uppercase tracking-wider">{label}</p>
-                    </div>
-                    <div className="space-y-2">
-                        {payload.map((entry, index) => (
-                            <div key={index} className="flex items-center justify-between space-x-4 group">
-                                <div className="flex items-center space-x-2">
-                                    <div
-                                        className="w-3 h-3 rounded-sm transition-transform group-hover:scale-110"
-                                        style={{ backgroundColor: entry.color }}
-                                    ></div>
-                                    <span className="text-sm font-medium text-slate-200">{entry.name}</span>
-                                </div>
-                                <span className="text-sm font-bold text-white tabular-nums">{entry.value}</span>
-                            </div>
-                        ))}
-                    </div>
-                    <div className="mt-3 pt-2 border-t border-slate-700/50">
-                        <div className="flex items-center justify-between">
-                            <span className="text-xs text-slate-400">Total</span>
-                            <span className="text-sm font-bold text-blue-400 tabular-nums">
-                                {payload.reduce((sum, entry) => sum + entry.value, 0)}
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            );
-        }
-        return null;
-    };
 
     return (
         <div className="space-y-6">

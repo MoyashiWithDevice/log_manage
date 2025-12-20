@@ -11,7 +11,6 @@ const LogListPage = () => {
     const [logs, setLogs] = useState([]);
     const [loading, setLoading] = useState(false);
     const [hasMore, setHasMore] = useState(true);
-    const [offset, setOffset] = useState(0);
     const [hosts, setHosts] = useState([]);
     const [selectedHost, setSelectedHost] = useState(host || '');
     const observerRef = useRef(null);
@@ -74,11 +73,9 @@ const LogListPage = () => {
             if (reset) {
                 setLogs(newLogs);
                 offsetRef.current = BATCH_SIZE;
-                setOffset(BATCH_SIZE);
             } else {
                 setLogs(prev => [...prev, ...newLogs]);
                 offsetRef.current += BATCH_SIZE;
-                setOffset(offsetRef.current);
             }
 
             const hasMoreData = newLogs.length >= BATCH_SIZE;
@@ -96,7 +93,6 @@ const LogListPage = () => {
     useEffect(() => {
         if (selectedHost) {
             setLogs([]);
-            setOffset(0);
             offsetRef.current = 0;
             setHasMore(true);
             hasMoreRef.current = true;
