@@ -1,0 +1,11 @@
+FROM node:20-bookworm
+
+WORKDIR /work
+
+COPY package*.json ./
+RUN npm ci
+
+COPY . .
+RUN npm run build
+
+RUN npm test -- --watchAll=false
