@@ -73,7 +73,6 @@ pipeline {
         }
       }
     }
-  }
 
     stage('Deploy Backend') {
         when {
@@ -106,6 +105,7 @@ pipeline {
             )
         }
     }
+}
 
   post {
     success {
