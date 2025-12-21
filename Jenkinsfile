@@ -99,7 +99,7 @@ pipeline {
                 rsync -av --delete -e "ssh -o StrictHostKeyChecking=no" backend/ \
                   deploy@${DEPLOY_HOST}:${BACK_DST}/
 
-                ssh -o StrictHostKeyChecking=no deploy@${DEPLOY_HOST} << 'EOF'
+                ssh -o StrictHostKeyChecking=no deploy@${DEPLOY_HOST} << EOF
                   set -eu
                   cd ${BACK_DST}
 
