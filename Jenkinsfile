@@ -95,9 +95,9 @@ pipeline {
           script {
             try {
               sh '''
-set -eu
-rsync -av --delete -e "ssh -o StrictHostKeyChecking=no" backend/ \
-    deploy@${DEPLOY_HOST}:${BACK_DST}/
+                set -eu
+                rsync -av --delete -e "ssh -o StrictHostKeyChecking=no" backend/ \
+                    deploy@${DEPLOY_HOST}:${BACK_DST}/
 
 ssh -o StrictHostKeyChecking=no deploy@${DEPLOY_HOST} <<EOS
 set -eu
