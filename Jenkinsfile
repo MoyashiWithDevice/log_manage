@@ -99,7 +99,7 @@ pipeline {
                 rsync -av --delete -e "ssh -o StrictHostKeyChecking=no" backend/ \
                   deploy@${DEPLOY_HOST}:${BACK_DST}/
 
-                ssh -o StrictHostKeyChecking=no deploy@${DEPLOY_HOST}"
+                ssh -o StrictHostKeyChecking=no deploy@${DEPLOY_HOST} << 'EOF'
                   set -eu
                   cd ${BACK_DST}
 
@@ -107,10 +107,10 @@ pipeline {
                     python3 -m venv venv
                   fi
                   
-                  ./venv/bin/python -m pip install --upgrade pipsyu
+                  ./venv/bin/python -m pip install --upgrade pip
                   ${VENV_PIP} install -r ${BACK_DST}/requirements.txt
                   sudo systemctl restart ${BACK_SERVICE}
-                "
+                EOF
               '''
               discordNotify(credId: env.DISCORD_CRED, message: "[OK] backend deployed: ${env.JOB_NAME} #${env.BUILD_NUMBER}")
             } catch (e) {
