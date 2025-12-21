@@ -99,13 +99,15 @@ pipeline {
                 rsync -av --delete -e "ssh -o StrictHostKeyChecking=no" backend/ \
                   deploy@${DEPLOY_HOST}:${BACK_DST}/
 
-                ssh -o StrictHostKeyChecking=no deploy@${DEPLOY_HOST} "
+                ssh -o StrictHostKeyChecking=no deploy@${DEPLOY_HOST}"
                   set -eu
+                  cd ${BACK_DST}
 
                   if [ ! -d venv ]; then
                     python3 -m venv venv
                   fi
-
+                  
+                  ./venv/bin/python -m pip install --upgrade pipsyu
                   ${VENV_PIP} install -r ${BACK_DST}/requirements.txt
                   sudo systemctl restart ${BACK_SERVICE}
                 "
