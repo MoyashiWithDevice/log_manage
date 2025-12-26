@@ -1,7 +1,7 @@
 @Library('discord-hooks') _
 
 pipeline {
-  agent any
+  agent { label 'default' }   // Vault CSI マウントのPodTemplateを使う
   options { timestamps() }
 
   environment {
@@ -10,20 +10,22 @@ pipeline {
     BACK_DST    = '/home/deploy/log_manage/backend'
     VENV_PIP    = '/home/deploy/log_manage/backend/venv/bin/pip'
     BACK_SERVICE= 'log-manage-backend.service'
-    SSH_CRED_ID = 'ssh-private-key'
-    DISCORD_CRED= 'discord-webhook-url'
+
+    SSH_KEY_PATH      = '/mnt/secrets/private_key'
+    DISCORD_WEBHOOK_F = '/mnt/secrets/discord_webhook_url'
   }
 
   stages {
     stage('Frontend Test') {
       steps {
         script {
+          def WEBHOOK = sh(script: 'cat "${DISCORD_WEBHOOK_F}"', returnStdout: true).trim()
           try {
             sh 'docker build -t frontend-test -f frontend/Dockerfile.ci frontend'
             sh 'docker run --rm frontend-test'
-            discordNotify(credId: env.DISCORD_CRED, message: "[OK] frontend test OK: ${env.JOB_NAME} #${env.BUILD_NUMBER}")
+            discordNotify(credId: WEBHOOK, message: "[OK] frontend test OK: ${env.JOB_NAME} #${env.BUILD_NUMBER}")
           } catch (e) {
-            discordNotify(credId: env.DISCORD_CRED, message: "[NG] frontend test FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}\n${env.BUILD_URL}")
+            discordNotify(credId: WEBHOOK, message: "[NG] frontend test FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}\n${env.BUILD_URL}")
             throw e
           }
         }
@@ -34,6 +36,7 @@ pipeline {
       when { branch 'main' }
       steps {
         script {
+          def WEBHOOK = sh(script: 'cat "${DISCORD_WEBHOOK_F}"', returnStdout: true).trim()
           try {
             sh '''
               set -eu
@@ -43,9 +46,9 @@ pipeline {
               docker cp "${CID}:/work/dist" ./frontend_dist
               docker rm -f "${CID}"
             '''
-            discordNotify(credId: env.DISCORD_CRED, message: "[OK] frontend build OK: ${env.JOB_NAME} #${env.BUILD_NUMBER}")
+            discordNotify(credId: WEBHOOK, message: "[OK] frontend build OK: ${env.JOB_NAME} #${env.BUILD_NUMBER}")
           } catch (e) {
-            discordNotify(credId: env.DISCORD_CRED, message: "[NG] frontend build FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}\n${env.BUILD_URL}")
+            discordNotify(credId: WEBHOOK, message: "[NG] frontend build FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}\n${env.BUILD_URL}")
             throw e
           }
         }
@@ -55,19 +58,21 @@ pipeline {
     stage('Deploy Frontend') {
       when { branch 'main' }
       steps {
-        sshagent(credentials: [env.SSH_CRED_ID]) {
-          script {
-            try {
-              sh '''
-                set -eu
-                rsync -av --delete -e "ssh -o StrictHostKeyChecking=no" frontend_dist/ \
-                  deploy@${DEPLOY_HOST}:${FRONT_DST}/
-              '''
-              discordNotify(credId: env.DISCORD_CRED, message: "[OK] frontend deployed: ${env.JOB_NAME} #${env.BUILD_NUMBER}")
-            } catch (e) {
-              discordNotify(credId: env.DISCORD_CRED, message: "[NG] frontend deploy FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}\n${env.BUILD_URL}")
-              throw e
-            }
+        script {
+          def WEBHOOK = sh(script: 'cat "${DISCORD_WEBHOOK_F}"', returnStdout: true).trim()
+          try {
+            sh '''
+              set -eu
+              chmod 600 "${SSH_KEY_PATH}"
+
+              rsync -av --delete \
+                -e "ssh -i ${SSH_KEY_PATH} -o StrictHostKeyChecking=no" \
+                frontend_dist/ deploy@${DEPLOY_HOST}:${FRONT_DST}/
+            '''
+            discordNotify(credId: WEBHOOK, message: "[OK] frontend deployed: ${env.JOB_NAME} #${env.BUILD_NUMBER}")
+          } catch (e) {
+            discordNotify(credId: WEBHOOK, message: "[NG] frontend deploy FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}\n${env.BUILD_URL}")
+            throw e
           }
         }
       }
@@ -76,12 +81,13 @@ pipeline {
     stage('Backend Test') {
       steps {
         script {
+          def WEBHOOK = sh(script: 'cat "${DISCORD_WEBHOOK_F}"', returnStdout: true).trim()
           try {
             sh 'docker build -t backend-test -f backend/Dockerfile.ci backend'
             sh 'docker run --rm backend-test'
-            discordNotify(credId: env.DISCORD_CRED, message: "[OK] backend test OK: ${env.JOB_NAME} #${env.BUILD_NUMBER}")
+            discordNotify(credId: WEBHOOK, message: "[OK] backend test OK: ${env.JOB_NAME} #${env.BUILD_NUMBER}")
           } catch (e) {
-            discordNotify(credId: env.DISCORD_CRED, message: "[NG] backend test FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}\n${env.BUILD_URL}")
+            discordNotify(credId: WEBHOOK, message: "[NG] backend test FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}\n${env.BUILD_URL}")
             throw e
           }
         }
@@ -91,32 +97,34 @@ pipeline {
     stage('Deploy & Restart Backend') {
       when { branch 'main' }
       steps {
-        sshagent(credentials: [env.SSH_CRED_ID]) {
-          script {
-            try {
-              sh '''
-                set -eu
-                rsync -av --delete -e "ssh -o StrictHostKeyChecking=no" backend/ \
-                    deploy@${DEPLOY_HOST}:${BACK_DST}/
+        script {
+          def WEBHOOK = sh(script: 'cat "${DISCORD_WEBHOOK_F}"', returnStdout: true).trim()
+          try {
+            sh '''
+              set -eu
+              chmod 600 "${SSH_KEY_PATH}"
 
-ssh -o StrictHostKeyChecking=no deploy@${DEPLOY_HOST} <<EOS
+              rsync -av --delete \
+                -e "ssh -i ${SSH_KEY_PATH} -o StrictHostKeyChecking=no" \
+                backend/ deploy@${DEPLOY_HOST}:${BACK_DST}/
+
+              ssh -i ${SSH_KEY_PATH} -o StrictHostKeyChecking=no deploy@${DEPLOY_HOST} <<EOS
 set -eu
 cd ${BACK_DST}
 
 if [ ! -d venv ]; then
-    python3 -m venv venv
+  python3 -m venv venv
 fi
-    
+
 ./venv/bin/python -m pip install --upgrade pip
 ${VENV_PIP} install -r ${BACK_DST}/requirements.txt
 sudo systemctl restart ${BACK_SERVICE}
 EOS
-              '''
-              discordNotify(credId: env.DISCORD_CRED, message: "[OK] backend deployed: ${env.JOB_NAME} #${env.BUILD_NUMBER}")
-            } catch (e) {
-              discordNotify(credId: env.DISCORD_CRED, message: "[NG] backend deploy FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}\n${env.BUILD_URL}")
-              throw e
-            }
+            '''
+            discordNotify(credId: WEBHOOK, message: "[OK] backend deployed: ${env.JOB_NAME} #${env.BUILD_NUMBER}")
+          } catch (e) {
+            discordNotify(credId: WEBHOOK, message: "[NG] backend deploy FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}\n${env.BUILD_URL}")
+            throw e
           }
         }
       }
@@ -125,10 +133,16 @@ EOS
 
   post {
     success {
-      discordNotify(credId: env.DISCORD_CRED, message: "[OK] pipeline SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}")
+      script {
+        def WEBHOOK = sh(script: 'cat "${DISCORD_WEBHOOK_F}"', returnStdout: true).trim()
+        discordNotify(credId: WEBHOOK, message: "[OK] pipeline SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}")
+      }
     }
     failure {
-      discordNotify(credId: env.DISCORD_CRED, message: "[NG] pipeline FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}\n${env.BUILD_URL}")
+      script {
+        def WEBHOOK = sh(script: 'cat "${DISCORD_WEBHOOK_F}"', returnStdout: true).trim()
+        discordNotify(credId: WEBHOOK, message: "[NG] pipeline FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}\n${env.BUILD_URL}")
+      }
     }
   }
 }
